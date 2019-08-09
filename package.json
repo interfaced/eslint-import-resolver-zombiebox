@@ -1,0 +1,26 @@
+{
+  "name": "eslint-import-resolver-zombiebox",
+  "description": "ESLint import plugin resolver for ZombieBox framework",
+  "version": "1.0.0",
+  "license": "MIT",
+  "author": "Interfaced (http://interfaced.tv)",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:interfaced/eslint-import-resolver-zombiebox.git"
+  },
+  "keywords": [
+    "eslint",
+    "eslint-plugin-import",
+    "import",
+    "resolver",
+    "zombiebox"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=8",
+    "npm": ">=5"
+  },
+  "peerDependencies": {
+    "zombiebox": "^2.1.0"
+  }
+}
