@@ -65,14 +65,35 @@ const constructAliasMap = (config) => {
 
 			aliasMap.set(addon.getName(), addon.getSourcesDir());
 
-			const nodeModulesPath = path.join(path.dirname(environment.packageJsonPath), 'node_modules');
-			const zbIndexPath = require.resolve('zombiebox', {paths: [nodeModulesPath]});
-			const zbRoot = path.dirname(path.dirname(zbIndexPath));
-			const zbPackageJsonPath = path.join(zbRoot, 'package.json');
-			const zbPackageJSON = require(zbPackageJsonPath);
-			const zbModulePath = path.join(zbRoot, zbPackageJSON.module || 'zb');
+			const resolveDependency = (packageName) => {
+				const nodeModulesPath = path.join(path.dirname(environment.packageJsonPath), 'node_modules');
+				const packageJsonPath = require.resolve(packageName + '/package.json', {paths: [nodeModulesPath]});
 
-			aliasMap.set('zb', zbModulePath);
+				const root = path.dirname(packageJsonPath);
+				const packageJSON = require(packageJsonPath);
+
+				if (packageName === 'zombiebox') {
+					aliasMap.set('zb', path.join(root, packageJSON.module));
+				} else {
+					const Addon = require(root);
+					const addon = new Addon();
+					aliasMap.set(addon.getName(), addon.getSourcesDir());
+				}
+			};
+
+
+			const allDependencies = [
+				...Object.keys(environment.packageJson.dependencies || {}),
+				...Object.keys(environment.packageJson.devDependencies || {})
+			];
+			const otherAddons = allDependencies.filter((dependency) =>
+				dependency.startsWith('zombiebox-extension') ||
+				dependency.startsWith('zombiebox-platform')
+			);
+
+			otherAddons.forEach(resolveDependency);
+			resolveDependency('zombiebox');
+
 			break;
 		}
 		case 'application': {
@@ -81,17 +102,6 @@ const constructAliasMap = (config) => {
 			const {Application} = require(zbIndexPath);
 
 			const application = new Application(path.dirname(environment.packageJsonPath), config.configs || []);
-			application.ready()
-				.then(() => {
-					// It's asynchronous, but it does initialisation that we need synchronously
-					// after that we need to stop chokidar that's preventing the process from exiting
-					// TODO: refactor file watching and get rid of this hack
-					for (const source of application.getCodeSource().fs._sources) {
-						if (source._watcher) {
-							source._watcher.close();
-						}
-					}
-				});
 
 			aliasMap = new Map(application.getAliases());
 			break;
